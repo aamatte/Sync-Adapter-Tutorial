@@ -1,0 +1,342 @@
+\documentclass[10pt]{extarticle}
+
+%Paquetes utilizados en esta tarea
+\usepackage{logo}
+\usepackage{enumerate}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{epsfig}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage[hidelinks]{hyperref}
+\usepackage{algorithmic}
+\usepackage[nothing]{algorithm}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.5,0}
+\definecolor{dkblue}{rgb}{0,0,0.5}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{purple}{rgb}{0.4,0,0.4}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{dkblue},
+  keywordstyle=\color{dkblue},
+  commentstyle=\color{gray},
+  stringstyle=\color{dkgreen},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+%Definiciones de comandos, para reutilizar secuencias frecuentes o ahorrar
+% c�digo
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\lb}{\\~\\}
+\newcommand{\la}{\leftarrow}
+
+\newcommand{\twopartdef}[4]
+{
+	\left\{
+		\begin{array}{ll}
+			#1 &  \text{si }#2 \\
+			#3 &  \text{si }#4
+		\end{array}
+	\right.
+}
+
+\newcommand{\threepartdef}[6]
+{
+	\left\{
+		\begin{array}{ll}
+			#1 &  \text{si }#2 \\
+			#3 &  \text{si }#4 \\
+			#5 &  \text{si }#6
+		\end{array}
+	\right.
+}
+
+\makeatletter
+
+\makeatother
+
+\begin{document}
+
+\begin{tabular}{ccl}
+\begin{tabular}{c}
+\psfig{file=puclogo.eps}
+\end{tabular}
+&\ \ \ & 
+\begin{tabular}{l}
+PONTIFICIA UNIVERSIDAD CATÓLICA DE CHILE\\
+ESCUELA DE INGENIERÍA\\
+DEPARTAMENTO DE CIENCIAS DE LA COMPUTACIÓN\\
+MECOLAB
+\end{tabular}
+\end{tabular}
+
+\begin{center}
+\bf Andrés Matte Vallejos\\
+\bf matte.andres@gmail.com\\
+\bf 1er semestre del 2015\lb
+
+\vspace{0.5cm}
+
+\bf {\Huge Tutorial Sync Adapter}
+\end{center}
+
+\section{Introducción}
+
+\paragraph{}
+Mantener una aplicación móvil no sincronizada con la web la vuelve prácticamente inservible. Hoy en día es difícil pensar en una aplicación importante que no descargue o suba datos a algún servidor. Claramente este feature hace que una aplicación luzca más profesional y da una mejor experiencia de usuario. Por ejemplo a un usuario de Facebook le gustaría que un cambio de foto de perfil no solo se realice en la web, si no que también ocurra en todos sus dispositivos móviles.
+
+\paragraph{}
+Hay muchas formas de realizar una sincronización de datos con un servidor. Si bien cada desarrollador puede implementar su propio sistema, no hay necesidad de reinventar la rueda. O en este caso, para qué vamos a reinventar algo mucho más complejo que una rueda: un Sync Adapter. Este framework ayuda a manejar y automatizar las transferencias de datos. Además entrega una serie de beneficios que es importante considerar.
+
+\subsection{Beneficios}
+
+\begin{enumerate}
+ \item Ejecución automatizada: la sincronización estará definida de acuerdo a tu configuración y se ejecutará automáticamente de acuerdo a eso. Con esto podemos eliminar el botón de refresh.
+ \item Revisión de conectividad: por ejemplo, si en algún momento no hay conexión a internet y corresponde una sincronización el framework se encargará de realizar la sincronización nuevamente cuando la haya.
+ \item Encolación de transferencias fallidas: si se está descargando un archivo y esto falla, se vuelve a intentar.
+ \item Gasta menos batería: muchas veces el framework realizará la sincronización de más de una aplicación al mismo tiempo. De esta forma la radio se enciende con menor frecuencia.
+ \item Centralización de la transferencia: la sincronización de los datos se realiza toda al mismo tiempo y en el mismo lugar.
+ \item Manejo de cuenta y autenticación: si el usuario de tu aplicación requiere credenciales especiales se puede integrar el manejo de cuentas y autenticación en la transferencia.
+\end{enumerate}
+
+\subsection{Qué se necesita}
+
+\paragraph{}
+Para que el Sync Adapter esté funcionando necesitamos implementar seis componentes, donde cada una juega un papel importante:
+
+\begin{enumerate}
+ \item Base de datos
+ \item Content Provider
+ \item Authenticator
+ \item Authenticator service
+ \item Clase Sync Adapter
+ \item Bound Service
+\end{enumerate}
+
+
+\section{Tutorial}
+
+\paragraph{}
+Durante el siguiente tutorial se creará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor o sobre como se realizan los requests. De todas formas en la última página se encuentra un link donde se puede descargar el código fuente de la aplicación.
+
+\subsection{Base de datos}
+
+\paragraph{}
+En android se pueden guardar datos de diferentes maneras, pero en este caso utilizaremos bases de datos. Usaremos SQLite, el sistema por defecto para android. En esta parte del tutorial no se ahondará de sobremanera debido a que es un tema transversal y hay mucha documentación al respecto. Se necesitará lo siguiente:
+
+\begin{enumerate}
+ \item Definir un esquema y sus constantes
+ \item Crear base de datos y tablas
+ \item Completar los métodos CRUD
+\end{enumerate}
+
+\subsubsection{Definir un esquema y sus constantes}
+
+Una vez que el modelo relacional esté definido este se debe plasmar en una clase que llamaremos DatabaseContract. Esta tendrá definidas como String los nombres de las tablas, de las columnas y algunas operaciones importantes. Gracias a esto podemos cambiar el nombre de, por ejemplo, una columna sin la necesidad de cambiar el resto de nuestro código.
+\\
+\begin{lstlisting}
+// DatabaseContract.java
+public final class DatabaseContract {
+
+    public DatabaseContract() {
+    }
+
+    public static abstract class Students implements BaseColumns {
+		// BaseColumns nos entrega las constantes _ID y _COUNT
+		
+        public static final String TABLE_NAME = "STUDENTS";
+        public static final String COLUMN_NAME_STUDENT_NAMES = "names";
+        public static final String COLUMN_NAME_FIRST_LASTNAME = "firstlastname";
+        public static final String COLUMN_NAME_SECOND_LASTNAME = "secondlastname";
+        public static final String COLUMN_ID_CLOUD = "idcloud";
+
+        public static final String TEXT_TYPE = " TEXT";
+        public static final String INTEGER_TYPE = " INTEGER";
+        public static final String COMMA_SEP = ",";
+
+        public static final String SQL_CREATE_STUDENTS_TABLE =
+                "CREATE TABLE " + Students.TABLE_NAME + " (" +
+                        Students._ID + " INTEGER PRIMARY KEY," +
+                        Students.COLUMN_NAME_STUDENT_NAMES + TEXT_TYPE + COMMA_SEP +
+                        Students.COLUMN_NAME_FIRST_LASTNAME + TEXT_TYPE + COMMA_SEP +
+                        Students.COLUMN_NAME_SECOND_LASTNAME + TEXT_TYPE + COMMA_SEP+
+                        Students.COLUMN_ID_CLOUD + INTEGER_TYPE +
+                        " )";
+
+        public static final String SQL_DELETE_STUDENTS =
+                "DROP TABLE IF EXISTS " + Students.TABLE_NAME;
+    }
+}
+\end{lstlisting}
+
+\paragraph{}
+Los datos que pongas en tu base de datos estarán seguros. Esto debido a que android las guarda en un espacio de disco privado al que solo tiene acceso tu aplicación. Si se quiere compartir los datos recolectados hay que implementar un Content Provider, tema de la siguiente sección.
+
+\subsubsection{Crear base de datos y tablas}
+
+\paragraph{}
+Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
+\paragraph{}
+Las instancias retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, estos métodos crean la base de datos en caso de no existir aún.
+\paragraph{}
+Otro método escencial es $onCreate(SQLiteDatabase db)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase db)$ y $onDowngrade(SQLiteDatabase db)$.
+\\
+\begin{lstlisting}
+// StudentsDbHelper.java
+// Documentacion:
+// http://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper.html
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class StudentsDbHelper extends SQLiteOpenHelper {
+
+    public static final int DATABASE_VERSION = 1;
+    public static final String DATABASE_NAME = "Students.db";
+
+    private static StudentsDbHelper sInstance;
+
+    private StudentsDbHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+	
+	// Nos aseguramos de que solo haya una instancia para evitar errores.
+	// Mas detalles: 
+	// http://www.androiddesignpatterns.com/2012/05/correctly-managing-your-sqlite-database.html
+    public static synchronized StudentsDbHelper getInstance(Context context) {
+        if (sInstance == null) {
+            sInstance = new StudentsDbHelper(context.getApplicationContext());
+        }
+        return sInstance;
+    }
+	
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(DatabaseContract.Students.SQL_CREATE_STUDENTS_TABLE);
+    }
+	
+	// Cambia la version del esquema en caso de haber modificaciones.
+	// Por simplicidad asumimos que esto no va a pasar y tan solo se resetea la db.
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL(DatabaseContract.Students.SQL_DELETE_STUDENTS);
+        onCreate(db);
+    }
+}
+\end{lstlisting}
+
+\paragraph{}
+Para tener acceso a la base de datos se debe hacer lo siguiente:
+\begin{lstlisting}
+StudentsDbHelper mDbHelper = StudentsDbHelper.newInstance();
+SQLiteDatabase db = mDbHelper.getWritableDatabase();
+\end{lstlisting}
+O en el otro caso:
+\begin{lstlisting}
+StudentsDbHelper mDbHelper = StudentsDbHelper.newInstance();
+SQLiteDatabase db = mDbHelper.getReadableDatabase();
+\end{lstlisting}
+
+\subsubsection{Completar los métodos CRUD}
+\begin{enumerate}
+	\item Insert : para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento es la columna en que se puede insertar NULL si values está vacio. Si es que no quieres que se ingrese una tabla con values vacio debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
+	
+\begin{lstlisting}
+// Insertar nuevo estudiante
+
+if (mDbHelper == null) {
+    mDbHelper = StudentsDbHelper.getInstance(getActivity());
+}
+SQLiteDatabase db = mDbHelper.getWritableDatabase();
+ContentValues values = new ContentValues();
+values.put(DatabaseContract.Students.COLUMN_NAME_STUDENT_NAMES, student.getNames());
+values.put(DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME, student.getFirstLastname());
+values.put(DatabaseContract.Students.COLUMN_NAME_SECOND_LASTNAME, student.getSecondLastname());
+values.put(DatabaseContract.Students.COLUMN_ID_CLOUD, student.getIdCloud());
+
+long success = db.insert(
+        DatabaseContract.Students.TABLE_NAME, 
+        null,								  
+        values);
+if (success > 0) return true;
+return false;
+     
+\end{lstlisting}
+
+	\item Query: usado para leer la información de la base de datos. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
+
+\begin{lstlisting}
+// Seleccionar todos los estudiantes
+
+if (mDbHelper == null) {
+    mDbHelper = StudentsDbHelper.getInstance(getActivity());
+}
+
+// Selecciono todas las columnas. Podria dejarse como null.
+String[] projection = {DatabaseContract.Students.COLUMN_NAME_STUDENT_NAMES,
+                       DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME,
+                       DatabaseContract.Students.COLUMN_NAME_SECOND_LASTNAME,
+                       DatabaseContract.Students.COLUMN_ID_CLOUD
+                       };
+
+// Se deja como null porque no se requiere filtrar. Si se necesitara filtrar por primer apellido:
+// String selection = DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME + "= ?"
+String selection = null;
+
+// Que el primer apellido sea Perez:
+// String[] selectionArgs = new String[]{ "Perez" };
+String[] selectionArgs = null;
+
+SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+Cursor c = db.query(DatabaseContract.Students.TABLE_NAME,   // Tabla
+                    projection,                             // Columnas a retornar
+                    selection,                              // Columnas de WHERE
+                    selectionArgs,                          // Valores de WHERE
+                    null,                                   // Group by
+                    null,                                   // Filtro por columnas de grupos
+                    DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME +" ASC"); // Ordenados
+
+ArrayList<Student> studentsInDb = new ArrayList<Student>();
+
+c.moveToFirst();
+
+if (c.getCount()<1){
+    return false;
+}
+
+while (c.moveToNext()){
+    String names = c.getString(c.getColumnIndexOrThrow(DatabaseContract.Students.COLUMN_NAME_STUDENT_NAMES))
+    		    .toUpperCase();
+    String firstLast = c.getString(c.getColumnIndexOrThrow(DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME))
+    		    .toUpperCase();
+    String secondLast = c.getString(c.getColumnIndexOrThrow(DatabaseContract.Students.COLUMN_NAME_SECOND_LASTNAME))
+    			.toUpperCase();
+    int idCloud = c.getInt(c.getColumnIndexOrThrow(DatabaseContract.Students.COLUMN_ID_CLOUD));
+    
+    studentsInDb.add(new Student(names, firstLast, secondLast, idCloud));
+}
+     
+\end{lstlisting}
+	
+	\item Delete: borra datos de la base de datos.
+	\item Update: actualiza datos.	
+	
+\end{enumerate}
+
+
+\subsection{Content Provider}
+\end{document}
