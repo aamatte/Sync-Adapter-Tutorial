@@ -1,9 +1,0 @@
-\BOOKMARK [1][-]{section.1}{Introducci\363n}{}% 1
-\BOOKMARK [2][-]{subsection.1.1}{Beneficios}{section.1}% 2
-\BOOKMARK [2][-]{subsection.1.2}{Qu\351 se necesita}{section.1}% 3
-\BOOKMARK [1][-]{section.2}{Tutorial}{}% 4
-\BOOKMARK [2][-]{subsection.2.1}{Base de datos}{section.2}% 5
-\BOOKMARK [3][-]{subsubsection.2.1.1}{Definir un esquema y sus constantes}{subsection.2.1}% 6
-\BOOKMARK [3][-]{subsubsection.2.1.2}{Crear base de datos y tablas}{subsection.2.1}% 7
-\BOOKMARK [3][-]{subsubsection.2.1.3}{Completar los m\351todos CRUD}{subsection.2.1}% 8
-\BOOKMARK [2][-]{subsection.2.2}{Content Provider}{section.2}% 9
