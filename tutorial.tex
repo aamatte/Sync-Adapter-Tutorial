@@ -135,7 +135,7 @@ Durante el siguiente tutorial se creará una aplicación sencilla que liste a lo
 \subsection{Base de datos}
 
 \paragraph{}
-En android se pueden guardar datos de diferentes maneras, pero en este caso utilizaremos bases de datos. Usaremos SQLite, el sistema por defecto para android. En esta parte del tutorial no se ahondará de sobremanera debido a que es un tema transversal y hay mucha documentación al respecto. Se necesitará lo siguiente:
+En android se pueden guardar información de diferentes maneras, pero en este caso utilizaremos bases de datos. Usaremos SQLite, el sistema por defecto para android. En esta parte del tutorial no se ahondará de sobremanera debido a que es un tema transversal y hay mucha documentación al respecto. Se necesitará lo siguiente:
 
 \begin{enumerate}
  \item Definir un esquema y sus constantes
@@ -190,7 +190,7 @@ Los datos que pongas en tu base de datos estarán seguros. Esto debido a que and
 \paragraph{}
 Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
 \paragraph{}
-Las instancias retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, estos métodos crean la base de datos en caso de no existir aún.
+Las instancias retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
 \paragraph{}
 Otro método escencial es $onCreate(SQLiteDatabase db)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase db)$ y $onDowngrade(SQLiteDatabase db)$.
 \\
@@ -252,7 +252,7 @@ SQLiteDatabase db = mDbHelper.getReadableDatabase();
 
 \subsubsection{Completar los métodos CRUD}
 \begin{enumerate}
-	\item Insert : para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento es la columna en que se puede insertar NULL si values está vacio. Si es que no quieres que se ingrese una tabla con values vacio debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
+	\item Insert : para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento especifica la columna en que la base de datos puede puede insertar null si values (los datos a ingresar) está vacio. Si es que no quieres que se ingrese un record con valores vacios debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
 	
 \begin{lstlisting}
 // Insertar nuevo estudiante
@@ -261,22 +261,25 @@ if (mDbHelper == null) {
     mDbHelper = StudentsDbHelper.getInstance(getActivity());
 }
 SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
 ContentValues values = new ContentValues();
 values.put(DatabaseContract.Students.COLUMN_NAME_STUDENT_NAMES, student.getNames());
 values.put(DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME, student.getFirstLastname());
 values.put(DatabaseContract.Students.COLUMN_NAME_SECOND_LASTNAME, student.getSecondLastname());
 values.put(DatabaseContract.Students.COLUMN_ID_CLOUD, student.getIdCloud());
 
+// Retorna la columna en la que fue insertado
 long success = db.insert(
         DatabaseContract.Students.TABLE_NAME, 
         null,								  
         values);
-if (success > 0) return true;
+        
+if (success >= 0) return true;
 return false;
      
 \end{lstlisting}
 
-	\item Query: usado para leer la información de la base de datos. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
+	\item Query: utilizado para hacer consultas. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
 
 \begin{lstlisting}
 // Seleccionar todos los estudiantes
@@ -285,19 +288,20 @@ if (mDbHelper == null) {
     mDbHelper = StudentsDbHelper.getInstance(getActivity());
 }
 
-// Selecciono todas las columnas. Podria dejarse como null.
+// Selecciono las columnas que debe retornar de cada fila. Podria dejarse como null y me retorna todas.
 String[] projection = {DatabaseContract.Students.COLUMN_NAME_STUDENT_NAMES,
                        DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME,
                        DatabaseContract.Students.COLUMN_NAME_SECOND_LASTNAME,
                        DatabaseContract.Students.COLUMN_ID_CLOUD
                        };
 
-// Se deja como null porque no se requiere filtrar. Si se necesitara filtrar por primer apellido:
+// Se deja como null porque no se requiere filtrar. Por ejemplo, si se necesitara filtrar por primer apellido:
 // String selection = DatabaseContract.Students.COLUMN_NAME_FIRST_LASTNAME + "= ?"
 String selection = null;
 
 // Que el primer apellido sea Perez:
 // String[] selectionArgs = new String[]{ "Perez" };
+// En este caso dejamos como null
 String[] selectionArgs = null;
 
 SQLiteDatabase db = mDbHelper.getReadableDatabase();
