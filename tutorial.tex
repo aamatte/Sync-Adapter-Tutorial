@@ -127,12 +127,10 @@ Para que el Sync Adapter esté funcionando necesitamos implementar seis componen
 \end{enumerate}
 
 
-\section{Tutorial}
-
 \paragraph{}
 Durante el siguiente tutorial se creará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor o sobre como se realizan los requests. De todas formas en la última página se encuentra un link donde se puede descargar el código fuente de la aplicación.
 
-\subsection{Base de datos}
+\section{Base de datos}
 
 \paragraph{}
 En android se pueden guardar información de diferentes maneras, pero en este caso utilizaremos bases de datos. Usaremos SQLite, el sistema por defecto para android. En esta parte del tutorial no se ahondará de sobremanera debido a que es un tema transversal y hay mucha documentación al respecto. Se necesitará lo siguiente:
@@ -185,7 +183,7 @@ public final class DatabaseContract {
 \paragraph{}
 Los datos que pongas en tu base de datos estarán seguros. Esto debido a que android las guarda en un espacio de disco privado al que solo tiene acceso tu aplicación. Si se quiere compartir los datos recolectados hay que implementar un Content Provider, tema de la siguiente sección.
 
-\subsubsection{Crear base de datos y tablas}
+\subsection{Crear base de datos y tablas}
 
 \paragraph{}
 Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
@@ -250,9 +248,11 @@ StudentsDbHelper mDbHelper = StudentsDbHelper.newInstance();
 SQLiteDatabase db = mDbHelper.getReadableDatabase();
 \end{lstlisting}
 
-\subsubsection{Completar los métodos CRUD}
-\begin{enumerate}
-	\item Insert : para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento especifica la columna en que la base de datos puede puede insertar null si values (los datos a ingresar) está vacio. Si es que no quieres que se ingrese un record con valores vacios debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
+\subsection{Completar los métodos CRUD}
+
+\subsubsection{Insert}
+\paragraph{}
+Para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento especifica la columna en que la base de datos puede puede insertar null si values (los datos a ingresar) está vacio. Si es que no quieres que se ingrese un record con valores vacios debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
 	
 \begin{lstlisting}
 // Insertar nuevo estudiante
@@ -279,7 +279,9 @@ return false;
      
 \end{lstlisting}
 
-	\item Query: utilizado para hacer consultas. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
+\subsubsection{Query}
+\paragraph{}
+Utilizado para hacer consultas. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
 
 \begin{lstlisting}
 // Seleccionar todos los estudiantes
@@ -335,14 +337,16 @@ while (c.moveToNext()){
 }
      
 \end{lstlisting}
-	
-	\item Delete: borra datos de la base de datos.
-	\item Update: actualiza datos.	
-	
-\end{enumerate}
+\subsubsection{Delete}
+\paragraph{}
+Borra datos de la base de datos.
+
+\subsubsection{Update}
+\paragraph{}
+Actualiza datos de la base de datos.
 
 
-\subsection{Content Provider}
+\section{Content Provider}
 
 \paragraph{}
 Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella sin la necesidad de que esta esté 'abierta'.
@@ -350,10 +354,10 @@ Un content provider es exactamente lo que su nombre dice, un proveedor de conten
 \paragraph{}
 Se pueden usar incluso como una forma de abstraer implementación de un sistema de datos complejo frente al resto de los desarrolladores de una misma aplicación. De esta forma el resto de los integrantes del equipo solo deben estar al tanto de los estándares de comunicación con el content provider y no necesitan preocuparse de detalles de la implementación. 
 
-\subsubsection{Flujo general}
+\subsection{Flujo general}
 
 \paragraph{}
-Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una Uri que hace referencia a un content provider específico y a un conjunto de datos de este. Es importante saber que pueden haber muchos content providers disponibles, cada uno identificado por una Uri particular. De hecho, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}, por ejemplo. En la próxima sección se entrará más en detalles en el diseño de las Uris.
+Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una Uri que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de Uris (un Uri para cada conjunto de datos ofrecido). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las Uris.
 
 \paragraph{}
 Nuestra instancia de ContentResolver decide a qué provider hacer la consulta basado en la Uri. Luego el content provider determina a qué conjunto de datos debe afectar (también basado en la Uri) e interactúa con la base de datos para realizar la operación que fue invocada.
