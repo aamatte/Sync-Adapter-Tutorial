@@ -141,10 +141,11 @@ En android se pueden guardar información de diferentes maneras, pero en este ca
  \item Completar los métodos CRUD
 \end{enumerate}
 
-\subsubsection{Definir un esquema y sus constantes}
+\subsection{Definir un esquema y sus constantes}
 
+\paragraph{}
 Una vez que el modelo relacional esté definido este se debe plasmar en una clase que llamaremos DatabaseContract. Esta tendrá definidas como String los nombres de las tablas, de las columnas y algunas operaciones importantes. Gracias a esto podemos cambiar el nombre de, por ejemplo, una columna sin la necesidad de cambiar el resto de nuestro código.
-\\
+
 \begin{lstlisting}
 // DatabaseContract.java
 public final class DatabaseContract {
@@ -189,9 +190,10 @@ Los datos que pongas en tu base de datos estarán seguros. Esto debido a que and
 Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
 \paragraph{}
 Las instancias retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
+
 \paragraph{}
-Otro método escencial es $onCreate(SQLiteDatabase db)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase db)$ y $onDowngrade(SQLiteDatabase db)$.
-\\
+Otro método escencial es $onCreate(SQLiteDatabase)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase)$ y $onDowngrade(SQLiteDatabase)$.
+
 \begin{lstlisting}
 // StudentsDbHelper.java
 // Documentacion:
@@ -248,9 +250,9 @@ StudentsDbHelper mDbHelper = StudentsDbHelper.newInstance();
 SQLiteDatabase db = mDbHelper.getReadableDatabase();
 \end{lstlisting}
 
-\subsection{Completar los métodos CRUD}
+\subsection{Crear métodos CRUD}
 
-\subsubsection{Insert}
+\subsubsection{Agregar datos}
 \paragraph{}
 Para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento especifica la columna en que la base de datos puede puede insertar null si values (los datos a ingresar) está vacio. Si es que no quieres que se ingrese un record con valores vacios debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
 	
@@ -279,9 +281,9 @@ return false;
      
 \end{lstlisting}
 
-\subsubsection{Query}
+\subsubsection{Consultar datos}
 \paragraph{}
-Utilizado para hacer consultas. Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
+Para esto se usa el método query(). Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
 
 \begin{lstlisting}
 // Seleccionar todos los estudiantes
@@ -337,13 +339,13 @@ while (c.moveToNext()){
 }
      
 \end{lstlisting}
-\subsubsection{Delete}
+\subsubsection{Borrar datos}
 \paragraph{}
-Borra datos de la base de datos.
+Se utiliza el método delete.
 
-\subsubsection{Update}
+\subsubsection{Actualizar datos}
 \paragraph{}
-Actualiza datos de la base de datos.
+Se utiliza el método update.
 
 
 \section{Content Provider}
