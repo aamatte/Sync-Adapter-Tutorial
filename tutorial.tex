@@ -351,12 +351,23 @@ Se utiliza el método update.
 \section{Content Provider}
 
 \paragraph{}
-Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella sin la necesidad de que esta esté 'abierta'.
+Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella o por otras aplicaciones sin la necesidad de que esta esté 'abierta'.
 
 \paragraph{}
 Se pueden usar incluso como una forma de abstraer implementación de un sistema de datos complejo frente al resto de los desarrolladores de una misma aplicación. De esta forma el resto de los integrantes del equipo solo deben estar al tanto de los estándares de comunicación con el content provider y no necesitan preocuparse de detalles de la implementación. 
 
-\subsection{Flujo general}
+\paragraph{}
+En esta sección cubriremos los siguientes temas:
+\begin{enumerate}
+	\item Funcionamiento general
+	\item Content URIs
+	\item Clase Contrato
+	\item Clase Content Provider
+	\item Cómo utilizar el Content Provider
+	\item Permisos
+\end{enumerate}
+
+\subsection{Funcionamiento general}
 
 \paragraph{}
 Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una Uri que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de Uris (un Uri para cada conjunto de datos ofrecido). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las Uris.
@@ -371,6 +382,38 @@ Nuestra instancia de ContentResolver decide a qué provider hacer la consulta ba
 \end{figure}
 
 
+
+\subsection{Content URIs}
+
+
+
+\subsection{Clase Contrato}
+
+\paragraph{}
+Explicar el flujo entre la clase contrato y la clase content provider para que se entienda para que sirve cada cosa. 
+MIME Types.
+
+
+\subsection{Clase Content Provider}
+
+	
+\subsection{Cómo utilizar el Content Provider}
+
+
+\subsection{Permisos}
+
+
+
+\section{Authenticator}
+
+
+\section{Authenticator service}
+
+
+\section{Clase Sync Adapter}
+
+
+\section{Bound Service}
 
 
 \end{document}
