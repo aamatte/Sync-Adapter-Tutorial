@@ -93,13 +93,18 @@ MECOLAB
 \bf {\Huge Tutorial Sync Adapter}
 \end{center}
 
+\tableofcontents
+
+\newpage
+
 \section{Introducción}
 
 \paragraph{}
 Mantener una aplicación móvil no sincronizada con la web la vuelve prácticamente inservible. Hoy en día es difícil pensar en una aplicación importante que no descargue o suba datos a algún servidor. Claramente este feature hace que una aplicación luzca más profesional y da una mejor experiencia de usuario. Por ejemplo a un usuario de Facebook le gustaría que un cambio de foto de perfil no solo se realice en la web, si no que también ocurra en todos sus dispositivos móviles.
 
 \paragraph{}
-Hay muchas formas de realizar una sincronización de datos con un servidor. Si bien cada desarrollador puede implementar su propio sistema, no hay necesidad de reinventar la rueda. O en este caso, para qué vamos a reinventar algo mucho más complejo que una rueda: un Sync Adapter. Este framework ayuda a manejar y automatizar las transferencias de datos. Además entrega una serie de beneficios que es importante considerar.
+Hay muchas formas de realizar una sincronización de datos con un servidor. Si bien cada desarrollador puede implementar su propio sistema, no hay necesidad de reinventar la rueda. O en este caso, para qué vamos a reinventar algo mucho más complejo que una rueda: un Sync Adapter. Este framework ayuda a manejar y automatizar las transferencias de datos.
+
 
 \subsection{Beneficios}
 
@@ -111,6 +116,12 @@ Hay muchas formas de realizar una sincronización de datos con un servidor. Si b
  \item Centralización de la transferencia: la sincronización de los datos se realiza toda al mismo tiempo y en el mismo lugar.
  \item Manejo de cuenta y autenticación: si el usuario de tu aplicación requiere credenciales especiales se puede integrar el manejo de cuentas y autenticación en la transferencia.
 \end{enumerate}
+
+\subsection{Qué haremos}
+
+\paragraph{}
+Durante el siguiente tutorial se creará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor o sobre como se realizan los requests. De todas formas en \url{https://github.com/aamatte/ListaAlumnosAndroid} se puede revisar el código de la aplicación utilizada para los ejemplos\footnote{Algunos detalles en el código pueden variar un poco en el tiempo pero los conceptos serán los mismos}.
+
 
 \subsection{Qué se necesita}
 
@@ -127,8 +138,6 @@ Para que el Sync Adapter esté funcionando necesitamos implementar seis componen
 \end{enumerate}
 
 
-\paragraph{}
-Durante el siguiente tutorial se creará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor o sobre como se realizan los requests. De todas formas en la última página se encuentra un link donde se puede descargar el código fuente de la aplicación.
 
 \section{Base de datos}
 
@@ -138,7 +147,7 @@ En android se pueden guardar información de diferentes maneras, pero en este ca
 \begin{enumerate}
  \item Definir un esquema y sus constantes
  \item Crear base de datos y tablas
- \item Completar los métodos CRUD
+ \item Crear métodos CRUD
 \end{enumerate}
 
 \subsection{Definir un esquema y sus constantes}
