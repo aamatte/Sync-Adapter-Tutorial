@@ -348,6 +348,7 @@ while (c.moveToNext()){
 }
      
 \end{lstlisting}
+
 \subsubsection{Borrar datos}
 \paragraph{}
 Se utiliza el método delete.
@@ -379,13 +380,13 @@ En esta sección cubriremos los siguientes temas:
 \subsection{Funcionamiento general}
 
 \paragraph{}
-Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una Uri que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de Uris (un Uri para cada conjunto de datos ofrecido). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las Uris.
+Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una URI que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de URIs (un URI para cada conjunto de datos ofrecido). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las URIs.
 
 \paragraph{}
-Nuestra instancia de ContentResolver decide a qué provider hacer la consulta basado en la Uri. Luego el content provider determina a qué conjunto de datos debe afectar (también basado en la Uri) e interactúa con la base de datos para realizar la operación que fue invocada.
+Nuestra instancia de ContentResolver decide a qué provider hacer la consulta basado en la URI. Luego el content provider determina a qué conjunto de datos debe afectar (también basado en la URI) e interactúa con la base de datos para realizar la operación que fue invocada.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{ContentProviderGeneral.png}
+    \includegraphics[width=0.8\textwidth]{ContentProviderGeneral.png}
     \caption{Flujo general de content provider}
     \label{fig:flujo_content_provider}
 \end{figure}
@@ -394,14 +395,104 @@ Nuestra instancia de ContentResolver decide a qué provider hacer la consulta ba
 
 \subsection{Content URIs}
 
+\paragraph{}
+Un content URI es un identificador de un conjunto de datos en un provider. Está formado por el identificador del provider (authority) y por un nombre que indica a la tabla o al contenido del provider que hace referencia. Cuando se llama a un método para acceder a algún conjunto de datos se debe incluir en los parámetros una URI para que el ContentResolver pueda determinar a qué provider le corresponde manejar el llamado, y para que el provider pueda determinar sobre que datos realizar la operación.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{provider_uri_explicacion.png}
+    \caption{Estructura content URI}
+    \label{fig:estructura_content_URI}
+\end{figure}
+
+
+
+\subsubsection{Authority}
+
+\paragraph{}
+La authority es el identificador de tu aplicación dentro de android. Por lo general el formato de este viene dado por el package de la aplicación más 'provider'. Por ejemplo, en el caso de nuestra aplicación en la que se basa el código del tutorial es \textit{com.example.andres.myapplication.provider}. En el package (y en este caso, en la authority) se suele utilizar como primeras palabras un dominio de internet, al revés, al cual pertenece la aplicación. En este caso asumimos que hay un dominio con la ruta \textit{andres.example.com}.
+
+\subsubsection{Estructura de rutas URI}
+
+\paragraph{}
+Para el content provider se puede diseñar una estructura nueva de los datos de acuerdo a lo que se quiera ofrecer. En la clase contrato definiremos nuevas tablas (que pueden ser iguales a las de tu base de datos o no) que conformarán la estructura de rutas. Por ejemplo, en nuestro caso solo definiremos una tabla Students igual a la de nuestra base de datos. Claramente se pueden hacer estructuras más complejas con tablas anidadas y más esoterismos, pero no se cubrirán en este tutorial\footnote{Para más detalles mirar: \url{http://developer.android.com/guide/topics/providers/content-provider-creating.html\#ContentURI}}.
+
+\paragraph{}
+Para nuestra aplicación definiremos dos URIs, una para obtener la lista completa de estudiantes y otra para obtener a un estudiante en particular basandonos en su ID. La primera es exactamente como la que está en la Figura~\ref{fig:estructura_content_URI}. La segunda debe poder soportar llamados del tipo 
+\begin{center}
+\textit{content://com.example.andres.myapplication.provider/students/3},
+\end{center}
+donde 3 es el id del estudiante a seleccionar. Para poder soportar esto debemos definir la URI de la siguiente manera:
+
+\begin{center}
+\textit{content://com.example.andres.myapplication.provider/students/\#}
+\end{center}
 
 
 \subsection{Clase Contrato}
 
 \paragraph{}
-Explicar el flujo entre la clase contrato y la clase content provider para que se entienda para que sirve cada cosa. 
-MIME Types.
+La clase contrato es la que contiene todos los URIs, MIME Types y constantes necesarias para poder tener un protocolo de comunicación fijo entre los distintos procesos que utilizan el provider. Esta clase es la que debes compartir con otros desarrolladores si quieres que usen tu provider, ya que con ella les proveerás todos las valores necesarios para que se puedan comunicar con el de manera correcta.
 
+\paragraph{}
+A continuación se presenta el código de la clase contrato de nuestra aplicación de ejemplo. Los conceptos involucrados se explicarán luego de eso.
+
+\begin{lstlisting}
+
+import android.content.ContentResolver;
+import android.net.Uri;
+import android.provider.BaseColumns;
+
+/**
+ *  Esta clase provee las constantes y URIs necesarias para trabajar con el StudentsProvider
+ */
+public final class StudentsContract {
+
+    public static final String AUTHORITY = "com.example.andres.myapplication.provider";
+    public static final Uri BASE_URI = Uri.parse("content://" + AUTHORITY);
+    public static final Uri STUDENTS_URI = Uri.withAppendedPath(StudentsContract.BASE_URI, "/students");
+
+    /*
+        MIME Types
+        Para listas se necesita  'vnd.android.cursor.dir/vnd.com.example.andres.provider.students
+        Para items se necesita 'vnd.android.cursor.item/vnd.com.example.andres.provider.students'
+        La primera parte viene esta definida en constantes de ContentResolver
+     */
+    public static final String URI_TYPE_STUDENT_DIR = ContentResolver.CURSOR_DIR_BASE_TYPE +
+            "/vnd.com.example.andres.provider.students";
+
+    public static final String URI_TYPE_STUDENT_ITEM = ContentResolver.CURSOR_ITEM_BASE_TYPE +
+            "/vnd.com.example.andres.provider.students";
+
+    /*
+        Tabla definida en provider. Aca podria ser una distinta a la de la base de datos,
+        pero consideramos la misma.
+     */
+    public static final class StudentsColumns implements BaseColumns{
+
+        private StudentsColumns(){}
+
+        public static final String NAMES = "names";
+        public static final String FIRST_LASTNAME = "firstlastname";
+        public static final String SECOND_LASTNAME = "secondlastname";
+        public static final String ID_CLOUD = "idcloud";
+
+        public static final String DEFAULT_SORT_ORDER = FIRST_LASTNAME + " ASC";
+
+    }
+
+}
+     
+\end{lstlisting}
+
+\paragraph{}
+De lo que está presente en la clase contrato y no se ha hablado es de los MIME Types. Estos conforman una manera estandar de clasificar los tipos de archivos o datos. Estos tipos son los mismos siempre, independiente del sistema operativo o de cualquier otra variante que se presente. Un MIME Type tiene dos partes: un tipo y un sub-tipo que están separados por un slash (/). Por ejemplo, las imagenes de formato JPEG tienen el MIME Type \textit{image/jpeg}.
+
+\paragraph{}
+En el caso del provider se especifican dos MIME Types principales. El primero es para items individuales, donde el tipo viene dado por \textit{\textbf{vnd.android.cursor.item}} y el subtipo (para nuestro provider) por \textit{/vnd.com.example.andres.provider.students}. El otro es para listas, donde el tipo viene dado por \textit{\textbf{vnd.android.cursor.dir}} y el subtipo (para nuestro provider) por   \textit{/vnd.com.example.andres.provider.students} (igual que para el de items individuales). De esta forma los MIME Types completos quedan como se especifica en el código.
+
+\paragraph{}
+Los MIME Types son importantes debido a que con ellas el desarrollador puede determinar el tipo de dato que se le retornará si utiliza una URI determinada en una consulta. No hay que olvidar que esta clase es principalmente un apoyo para que otros puedan utilizar los datos que les provees, por lo tanto se debe ser consistente y claro en la implementación.
 
 \subsection{Clase Content Provider}
 
