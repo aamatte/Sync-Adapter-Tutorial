@@ -120,7 +120,7 @@ Hay muchas formas de realizar una sincronización de datos con un servidor. Si b
 \subsection{Qué haremos}
 
 \paragraph{}
-Durante el siguiente tutorial se creará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor o sobre como se realizan los requests. De todas formas en \url{https://github.com/aamatte/ListaAlumnosAndroid} se puede revisar el código de la aplicación utilizada para los ejemplos\footnote{Algunos detalles en el código pueden variar un poco en el tiempo pero los conceptos serán los mismos}.
+Durante el siguiente tutorial se utilizará una aplicación sencilla que liste a los integrantes de un curso. Se podrá añadir estudiantes, tanto en el servidor web como en la aplicación android, y se deberán mantener sincronizados los datos a través de un sync adapter. No se entrará en temas que escapan del objetivo del tutorial como el servidor, las vistas o sobre como se realizan los requests. De todas formas en \url{https://github.com/aamatte/ListaAlumnosAndroid} se puede revisar el código de la aplicación utilizada para los ejemplos\footnote{Algunos detalles en el código pueden variar en el tiempo pero los conceptos serán los mismos}.
 
 
 \subsection{Qué se necesita}
@@ -190,15 +190,12 @@ public final class DatabaseContract {
 }
 \end{lstlisting}
 
-\paragraph{}
-Los datos que pongas en tu base de datos estarán seguros. Esto debido a que android las guarda en un espacio de disco privado al que solo tiene acceso tu aplicación. Si se quiere compartir los datos recolectados hay que implementar un Content Provider, tema de la siguiente sección.
-
 \subsection{Crear base de datos y tablas}
 
 \paragraph{}
 Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
 \paragraph{}
-Las instancias retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
+Las instancias de SQLiteDatabase retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
 
 \paragraph{}
 Otro método escencial es $onCreate(SQLiteDatabase)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase)$ y $onDowngrade(SQLiteDatabase)$.
@@ -266,7 +263,7 @@ SQLiteDatabase db = mDbHelper.getReadableDatabase();
 Para insertar datos se deben ingresar los datos del elemento a añadir en ContentValues y usar el método insert. El segundo argumento especifica la columna en que la base de datos puede puede insertar null si values (los datos a ingresar) está vacio. Si es que no quieres que se ingrese un record con valores vacios debes setearlo como null. Por ejemplo, si se quiere añadir un estudiante:
 	
 \begin{lstlisting}
-// Insertar nuevo estudiante
+// Codigo para insertar nuevo estudiante
 
 if (mDbHelper == null) {
     mDbHelper = StudentsDbHelper.getInstance(getActivity());
@@ -295,7 +292,7 @@ return false;
 Para esto se usa el método query(). Si no se quiere filtrar y solo obtener toda la información de la tabla se pueden dejar todos los valores como null excepto el nombre de la tabla. Para seleccionar todos los estudiantes:
 
 \begin{lstlisting}
-// Seleccionar todos los estudiantes
+// Codigo para seleccionar todos los estudiantes
 
 if (mDbHelper == null) {
     mDbHelper = StudentsDbHelper.getInstance(getActivity());
@@ -361,10 +358,10 @@ Se utiliza el método update.
 \section{Content Provider}
 
 \paragraph{}
-Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella o por otras aplicaciones sin la necesidad de que esta esté 'abierta'.
+Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella o por otras aplicaciones sin la necesidad de que esta esté abierta.
 
 \paragraph{}
-Se pueden usar incluso como una forma de abstraer implementación de un sistema de datos complejo frente al resto de los desarrolladores de una misma aplicación. De esta forma el resto de los integrantes del equipo solo deben estar al tanto de los estándares de comunicación con el content provider y no necesitan preocuparse de detalles de la implementación. 
+Se pueden usar incluso como una forma de abstraer la implementación de un sistema de datos complejo frente al resto de los desarrolladores de una misma aplicación. De esta forma el resto de los integrantes del equipo solo deben estar al tanto de los estándares de comunicación con el content provider y no necesitan preocuparse de detalles de la implementación. De todas formas su principal objetivo es compartir los datos con otros procesos.
 
 \paragraph{}
 En esta sección cubriremos los siguientes temas:
@@ -380,7 +377,7 @@ En esta sección cubriremos los siguientes temas:
 \subsection{Funcionamiento general}
 
 \paragraph{}
-Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una URI que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de URIs (un URI para cada conjunto de datos ofrecido). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las URIs.
+Como se aprecia en la Figura~\ref{fig:flujo_content_provider} el flujo parte desde tu aplicación obteniendo una instancia de ContentResolver\footnote{ContentResolver: http://developer.android.com/reference/android/content/ContentResolver.html}. Luego, a través de esta se hace una consulta pasando como primer parámetro una URI que hace referencia a un conjunto de datos que ofrece un content provider específico. Es importante saber que pueden haber muchos content providers disponibles, cada uno con su conjunto de URIs (corresponde un URI para cada conjunto de datos ofrecido en el provider). Por ejemplo, android provee Contacts Provider\footnote{Contacts provider: http://developer.android.com/guide/topics/providers/contacts-provider.html} y Calendar Provider\footnote{Calendar provider: http://developer.android.com/guide/topics/providers/calendar-provider.html}. En la próxima sección se entrará más en detalles en el diseño de las URIs.
 
 \paragraph{}
 Nuestra instancia de ContentResolver decide a qué provider hacer la consulta basado en la URI. Luego el content provider determina a qué conjunto de datos debe afectar (también basado en la URI) e interactúa con la base de datos para realizar la operación que fue invocada.
@@ -396,7 +393,7 @@ Nuestra instancia de ContentResolver decide a qué provider hacer la consulta ba
 \subsection{Content URIs}
 
 \paragraph{}
-Un content URI es un identificador de un conjunto de datos en un provider. Está formado por el identificador del provider (authority) y por un nombre que indica a la tabla o al contenido del provider que hace referencia. Cuando se llama a un método para acceder a algún conjunto de datos se debe incluir en los parámetros una URI para que el ContentResolver pueda determinar a qué provider le corresponde manejar el llamado, y para que el provider pueda determinar sobre que datos realizar la operación.
+Un content URI es un identificador de un conjunto de datos en un provider. Está formado por el identificador del provider (authority) y por un nombre que indica a la tabla o al contenido que hace referencia. Cuando se llama a un método para acceder a algún conjunto de datos se debe incluir en los parámetros una URI determinada. Esto para que el ContentResolver pueda determinar a qué provider le corresponde manejar el llamado, y para que el provider pueda determinar sobre que datos realizar la operación.
 
 \begin{figure}[H]
     \centering
@@ -410,12 +407,12 @@ Un content URI es un identificador de un conjunto de datos en un provider. Está
 \subsubsection{Authority}
 
 \paragraph{}
-La authority es el identificador de tu aplicación dentro de android. Por lo general el formato de este viene dado por el package de la aplicación más 'provider'. Por ejemplo, en el caso de nuestra aplicación en la que se basa el código del tutorial es \textit{com.example.andres.myapplication.provider}. En el package (y en este caso, en la authority) se suele utilizar como primeras palabras un dominio de internet, al revés, al cual pertenece la aplicación. En este caso asumimos que hay un dominio con la ruta \textit{andres.example.com}.
+La authority es el identificador de tu aplicación dentro de android. Por lo general el formato de este viene dado por el package de la aplicación más 'provider'. Por ejemplo, en el caso de nuestra aplicación es \textit{com.example.andres.myapplication.provider}. En el package (y en este caso, en la authority) se suele utilizar como primeras palabras un dominio de internet, al revés, al cual pertenece la aplicación. En este caso asumimos que hay un dominio con la ruta \textit{andres.example.com}.
 
 \subsubsection{Estructura de rutas URI}
 
 \paragraph{}
-Para el content provider se puede diseñar una estructura nueva de los datos de acuerdo a lo que se quiera ofrecer. En la clase contrato definiremos nuevas tablas (que pueden ser iguales a las de tu base de datos o no) que conformarán la estructura de rutas. Por ejemplo, en nuestro caso solo definiremos una tabla Students igual a la de nuestra base de datos. Claramente se pueden hacer estructuras más complejas con tablas anidadas y más esoterismos, pero no se cubrirán en este tutorial\footnote{Para más detalles mirar: \url{http://developer.android.com/guide/topics/providers/content-provider-creating.html\#ContentURI}}.
+Para el content provider se puede diseñar una estructura nueva de los datos de acuerdo a lo que se quiera ofrecer. En la clase contrato definiremos nuevas tablas (que pueden ser iguales a las de tu base de datos o no) que conformarán la estructura de rutas. En nuestro caso solo definiremos una tabla Students igual a la de nuestra base de datos. Claramente se pueden hacer estructuras más complejas con tablas anidadas y más esoterismos, pero no se cubrirán en este tutorial\footnote{Para más detalles mirar: \url{http://developer.android.com/guide/topics/providers/content-provider-creating.html\#ContentURI}}.
 
 \paragraph{}
 Para nuestra aplicación definiremos dos URIs, una para obtener la lista completa de estudiantes y otra para obtener a un estudiante en particular basandonos en su ID. La primera es exactamente como la que está en la Figura~\ref{fig:estructura_content_URI}. La segunda debe poder soportar llamados del tipo 
@@ -432,10 +429,10 @@ donde 3 es el id del estudiante a seleccionar. Para poder soportar esto debemos 
 \subsection{Clase Contrato}
 
 \paragraph{}
-La clase contrato es la que contiene todos los URIs, MIME Types y constantes necesarias para poder tener un protocolo de comunicación fijo entre los distintos procesos que utilizan el provider. Esta clase es la que debes compartir con otros desarrolladores si quieres que usen tu provider, ya que con ella les proveerás todos las valores necesarios para que se puedan comunicar con el de manera correcta. Básicamente, en la otra aplicación hipotética se debe copiar y pegar la clase contrato.
+La clase contrato es la que contiene todos los URIs, MIME Types y constantes necesarias para poder tener un protocolo de comunicación fijo entre los distintos procesos que utilizan el provider. Esta clase es la que debes compartir con otros desarrolladores si quieres que usen tu provider, ya que con ella les proveerás todos las valores necesarios para que se puedan comunicar con él de manera correcta. Básicamente, en la aplicación que utilice el provider se debe copiar y pegar la clase contrato.
 
 \paragraph{}
-A continuación se presenta el código de la clase contrato de nuestra aplicación de ejemplo. Los conceptos involucrados se explicarán luego de eso.
+A continuación se presenta el código de la clase contrato de nuestra aplicación de ejemplo. Los conceptos involucrados se explicarán luego.
 
 \begin{lstlisting}
 
@@ -499,7 +496,7 @@ Los MIME Types son importantes debido a que con ellas el desarrollador puede det
 \subsection{Clase Content Provider}
 
 \paragraph{}
-A continuación se creará una clase StudentProvider que herede de la clase abstracta ContentProvider. Esta obliga a implementar una serie de métodos especificados en el código que se mostrará a continuación. Por ejemplo, se pide implementar el método \textit{query}. Este método tiene el mismo nombre que el que se usa desde ContentResolver. Es decir, si llamamos a ContentResolver.query(), el content resolver determinará a que provider llamar basado en la URI y llamará al método query() de ese provider.
+A continuación se creará una clase StudentProvider que herede de la clase abstracta ContentProvider. Esta obliga a implementar una serie de métodos especificados en el código que se mostrará a continuación. Por ejemplo, se pide implementar el método \textit{query}. Este método tiene el mismo nombre que el que se usa desde ContentResolver. Es decir, si llamamos a ContentResolver.query(), el content resolver determinará a qué provider llamar basado en la URI y llamará al método query() de ese provider.
 
 \begin{lstlisting}
 import android.content.ContentProvider;
@@ -647,13 +644,13 @@ public class StudentsProvider extends ContentProvider {
 \subsubsection{URI Matcher}
 
 \paragraph{}
-Una clase importante que se utiliza en StudentProvider es UriMatcher. Esta clase se encarga de ayudarte a determinar que acción seguir para cada URI definida. Esto lo logra asociando cada URI a un entero que idealmente debes definir como constante. Esto ayuda porque claramente es más fácil hablar en términos de constantes con un significado definido.
+Una clase importante que se utiliza en StudentProvider es UriMatcher. Esta clase se encarga de ayudarte a determinar que acción seguir para cada URI definida. Esto lo logra asociando cada URI a un entero que idealmente debes definir como constante. Además permite definir URIs genéricas, como se ve en el código para la elección de estudiantes por su ID.
 
 
 \subsection{Cómo utilizar el Content Provider}
 
 \paragraph{}
-Una vez que se tiene todo lo anterior definido correctamente podemos hacer uso de nuestro ContentProvider. Para probar si funciona correctamente hay dos opciones: probarlo simplemente en tu aplicación o crear otra aplicación de prueba en la que se utilice. Ahora la utilización será muy sencilla, por ejemplo para seleccionar todos los estudiantes se debe hacer lo siguiente:
+Una vez que se tiene todo lo anterior definido correctamente podemos hacer uso de nuestro ContentProvider. Para probar si funciona correctamente hay dos opciones: probarlo simplemente en tu aplicación o crear otra aplicación de prueba que lo utilice. Ahora el uso será muy sencillo, por ejemplo para seleccionar todos los estudiantes se debe hacer lo siguiente:
 
 \begin{lstlisting}
 Cursor c = mContentResolver.query(StudentsContract.STUDENTS_URI, null, null, null, null);
