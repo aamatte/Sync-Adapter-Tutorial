@@ -432,7 +432,7 @@ donde 3 es el id del estudiante a seleccionar. Para poder soportar esto debemos 
 \subsection{Clase Contrato}
 
 \paragraph{}
-La clase contrato es la que contiene todos los URIs, MIME Types y constantes necesarias para poder tener un protocolo de comunicación fijo entre los distintos procesos que utilizan el provider. Esta clase es la que debes compartir con otros desarrolladores si quieres que usen tu provider, ya que con ella les proveerás todos las valores necesarios para que se puedan comunicar con el de manera correcta.
+La clase contrato es la que contiene todos los URIs, MIME Types y constantes necesarias para poder tener un protocolo de comunicación fijo entre los distintos procesos que utilizan el provider. Esta clase es la que debes compartir con otros desarrolladores si quieres que usen tu provider, ya que con ella les proveerás todos las valores necesarios para que se puedan comunicar con el de manera correcta. Básicamente, en la otra aplicación hipotética se debe copiar y pegar la clase contrato.
 
 \paragraph{}
 A continuación se presenta el código de la clase contrato de nuestra aplicación de ejemplo. Los conceptos involucrados se explicarán luego de eso.
@@ -485,6 +485,8 @@ public final class StudentsContract {
      
 \end{lstlisting}
 
+\subsubsection{MIME Types}
+
 \paragraph{}
 De lo que está presente en la clase contrato y no se ha hablado es de los MIME Types. Estos conforman una manera estandar de clasificar los tipos de archivos o datos. Estos tipos son los mismos siempre, independiente del sistema operativo o de cualquier otra variante que se presente. Un MIME Type tiene dos partes: un tipo y un sub-tipo que están separados por un slash (/). Por ejemplo, las imagenes de formato JPEG tienen el MIME Type \textit{image/jpeg}.
 
@@ -496,13 +498,210 @@ Los MIME Types son importantes debido a que con ellas el desarrollador puede det
 
 \subsection{Clase Content Provider}
 
-	
+\paragraph{}
+A continuación se creará una clase StudentProvider que herede de la clase abstracta ContentProvider. Esta obliga a implementar una serie de métodos especificados en el código que se mostrará a continuación. Por ejemplo, se pide implementar el método \textit{query}. Este método tiene el mismo nombre que el que se usa desde ContentResolver. Es decir, si llamamos a ContentResolver.query(), el content resolver determinará a que provider llamar basado en la URI y llamará al método query() de ese provider.
+
+\begin{lstlisting}
+import android.content.ContentProvider;
+import android.content.ContentValues;
+import android.content.UriMatcher;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.text.TextUtils;
+
+/*
+   Clase que extiende ContentProvider y que interactua con la base de datos 
+ */
+public class StudentsProvider extends ContentProvider {
+    public static final int STUDENT_LIST = 1;
+    public static final int STUDENT_ID = 2;
+    private static final UriMatcher sUriMatcher;
+    static{
+        sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+        /*
+            URI para todos los estudiantes.
+            Se setea que cuando se pregunta a UriMatcher por la URI:
+            content://com.example.andres.myapplication.provider/students
+            se devuelva un entero con el valor de 1.
+         */
+        sUriMatcher.addURI(StudentsContract.AUTHORITY, "students", STUDENT_LIST);
+        /*
+            URI para un estudiante.
+            Se setea que cuando se pregunta a UriMatcher por la URI:
+            content://com.example.andres.myapplication.provider/students/#
+            se devuelva un entero con el valor de 2.
+         */
+        sUriMatcher.addURI(StudentsContract.AUTHORITY, "students/#", STUDENT_ID);
+    }
+    /*
+        Instancia de StudentsDbHelper para interactuar con la base de datos
+     */
+    private StudentsDbHelper mDbHelper;
+
+    public StudentsProvider() { }
+
+    @Override
+    public boolean onCreate() {
+        mDbHelper = StudentsDbHelper.getInstance(getContext());
+        return true;
+    }
+
+    /*
+        Llamado para borrar una o mas filas de una tabla
+     */
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        int rows = 0;
+        switch (sUriMatcher.match(uri)) {
+            case STUDENT_LIST:
+                // Se borran todas las filas
+                rows = db.delete(DatabaseContract.Students.TABLE_NAME, null, null);
+                break;
+            case STUDENT_ID:
+                // Se borra la fila del ID seleccionado
+                rows = db.delete(DatabaseContract.Students.TABLE_NAME, selection, selectionArgs);
+        }
+        // Se retorna el numero de filas eliminadas
+        return rows;
+    }
+
+    /*
+        Se determina el MIME Type del dato o conjunto de datos al que apunta la URI
+     */
+    @Override
+    public String getType(Uri uri) {
+        switch (sUriMatcher.match(uri)){
+            case STUDENT_LIST:
+                return StudentsContract.URI_TYPE_STUDENT_DIR;
+            case STUDENT_ID:
+                return StudentsContract.URI_TYPE_STUDENT_ITEM;
+            default:
+                return null;
+        }
+    }
+
+    /*
+        Inserta nuevo estudiante
+     */
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        db.insert(DatabaseContract.Students.TABLE_NAME, null, values);
+        return null;
+    }
+
+    /*
+        Retorna el o los datos que se le pida de acuerdo a la URI
+     */
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+                        String[] selectionArgs, String sortOrder) {
+
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        switch (sUriMatcher.match(uri)){
+        
+            // Se pide la lista completa de estudiantes
+            case STUDENT_LIST:
+                // Si no hay un orden especificado,
+                // lo ordenamos de manera ascendente de acuerdo a lo que diga el contrato
+                if (sortOrder == null || TextUtils.isEmpty(sortOrder)) 
+                		sortOrder = StudentsContract.StudentsColumns.DEFAULT_SORT_ORDER;
+                break;
+                
+            // Se pide un estudiante en particular
+            case STUDENT_ID:
+                // Se adjunta la ID del estudiante selecciondo en el filtro de la seleccion
+                if (selection == null) 
+                		selection = "";
+                selection = selection + "_ID = " + uri.getLastPathSegment();
+                break;
+
+            // La URI que se recibe no esta definida
+            default:
+                throw new IllegalArgumentException(
+                        "Unsupported URI: " + uri);
+        }
+        Cursor cursor = db.query(DatabaseContract.Students.TABLE_NAME,
+                                 projection,
+                                 selection,
+                                 selectionArgs,
+                                 null,
+                                 null,
+                                 sortOrder);
+        // Se retorna un cursor sobre el cual se debe iterar para obtener los datos
+        return cursor;
+    }
+
+    @Override
+    public int update(Uri uri, ContentValues values, String selection,
+                      String[] selectionArgs) {
+        // No se implemento un update
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+}
+
+\end{lstlisting}
+
+\subsubsection{URI Matcher}
+
+\paragraph{}
+Una clase importante que se utiliza en StudentProvider es UriMatcher. Esta clase se encarga de ayudarte a determinar que acción seguir para cada URI definida. Esto lo logra asociando cada URI a un entero que idealmente debes definir como constante. Esto ayuda porque claramente es más fácil hablar en términos de constantes con un significado definido.
+
+
 \subsection{Cómo utilizar el Content Provider}
+
+\paragraph{}
+Una vez que se tiene todo lo anterior definido correctamente podemos hacer uso de nuestro ContentProvider. Para probar si funciona correctamente hay dos opciones: probarlo simplemente en tu aplicación o crear otra aplicación de prueba en la que se utilice. Ahora la utilización será muy sencilla, por ejemplo para seleccionar todos los estudiantes se debe hacer lo siguiente:
+
+\begin{lstlisting}
+Cursor c = mContentResolver.query(StudentsContract.STUDENTS_URI, null, null, null, null);
+c.moveToFirst();
+while (c.moveToNext()){
+	String names = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.NAMES));
+    String firstLast = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.FIRST_LASTNAME));
+    String secondLast = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.SECOND_LASTNAME));
+	// Hacer lo que se necesite con los datos
+}
+c.close();
+
+\end{lstlisting}
+
+\paragraph{}
+Para seleccionar un estudiante cuyo ID = 1 se podría hacer lo siguiente:
+
+\begin{lstlisting}
+Cursor c = mContentResolver.query(Uri.withAppendedPath(StudentsContract.STUDENTS_URI, "1"), null, null, null, null);
+c.moveToFirst();
+String names = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.NAMES));
+String firstLast = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.FIRST_LASTNAME));
+String secondLast = c.getString(c.getColumnIndexOrThrow(StudentsContract.StudentsColumns.SECOND_LASTNAME));
+// Hacer lo que se necesite con los datos
+c.close();
+
+\end{lstlisting}
 
 
 \subsection{Permisos}
 
+\paragraph{}
+Se deben setear ciertos permisos en el archivo AndroidManifest.xml presente en toda aplicación android. Para nuestra aplicación agregaremos solo lo fundamental, que es lo siguiente:
 
+\begin{lstlisting}
+...
+<provider
+   android:name=".Provider.StudentsProvider"
+   android:authorities="com.example.andres.myapplication.provider"
+   android:enabled="true"		// Permite al sistema iniciar el provider
+   android:exported="true"		// Permite que otras apps usen el provider
+   android:syncable="true">		// Indica que los datos del provider son sincronizados con la nube
+</provider>
+...
+\end{lstlisting}
+
+\paragraph{}
+Para más información sobre tipos de permisos más complejos se recomienda visitar \url{http://developer.android.com/guide/topics/providers/content-provider-creating.html\#Permissions}.
 
 \section{Authenticator}
 
