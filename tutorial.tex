@@ -132,7 +132,6 @@ Para que el Sync Adapter esté funcionando necesitamos implementar seis componen
  \item Base de datos
  \item Content Provider
  \item Authenticator
- \item Authenticator service
  \item Clase Sync Adapter
  \item Bound Service
 \end{enumerate}
@@ -700,10 +699,52 @@ Se deben setear ciertos permisos en el archivo AndroidManifest.xml presente en t
 \paragraph{}
 Para más información sobre tipos de permisos más complejos se recomienda visitar \url{http://developer.android.com/guide/topics/providers/content-provider-creating.html\#Permissions}.
 
+
 \section{Authenticator}
 
+\paragraph{}
+Un authenticator es básicamente una componente que nos ofrece android para manejar las cuentas de nuestra aplicación de manera profesional, elegante y con una gran cobertura de los posibles casos que se puedan presentar. Su implementación, aunque sea \textit{stub}, es obligatoria si se quiere implementar un sync adapter. Para esta parte supondremos que tenemos una API desarrollada que permite enviar un usuario y contraseña y retorna el token necesario para que podamos interactuar con ella.
 
-\section{Authenticator service}
+\subsection{Beneficios}
+
+\paragraph{}
+En este caso estamos obligados a implementar un authenticator si es que queremos hacer un sync adapter. Pero si no estuvieramos obligados aún sería extremadamente útil implementar esta componente para manejar las cuentas. Se podría pensar que basta con hacer un log-in que utilice la API para obtener el token y guardar este en la base de datos. De esta forma nos ahorramos estudiar e implementar esta componente. La verdad es que eso puede funcionar pero deja una gran gama de casos posibles sin cubrir.
+
+\paragraph{}
+Imaginemos que el usuario cambia su contraseña en otro cliente y quiere que esto se vea reflejado en la aplicación. Con la implementación anteriormente indicada no podemos enterarnos de esto. O qué pasa si el usuario tiene su token expirado. Para darnos cuenta tendriamos que implementar nuestro propio sistema que maneje este caso. O si el usuario quiere que al loguearse en una aplicación se loguee automáticamente en todas las otras aplicaciones relacionadas (como las de Google). El authenticator maneja todos estos casos simplificando la tarea del desarrollador, por lo que su uso es absolutamente recomendable.
+
+\paragraph{}
+En resumen, podemos obtener los siguientes beneficios:
+
+\begin{enumerate}
+	\item Forma estandar de autenticar a los usuarios.
+	\item Simplifica autenticación para el desarrollador.
+	\item Maneja casos de acceso denegados.
+	\item Puede manejar distintos tipos de tokens (que pueden otorgar distintos permisos).
+	\item Compartir cuentas entre aplicaciones.
+	\item Nos permite implementar un SyncAdapter.
+	\item Además, tu aplicación se mete en terreno de gigantes ;).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.25\textwidth]{app_en_accounts_settings.png}
+    \caption{La cuenta relacionada con nuestra aplicación en la configuración del celular}
+    \label{fig:app_en_accounts_settings}
+\end{figure}
+
+\subsection{Qué haremos}
+
+\paragraph{}
+Para implementar este componente abordaremos los siguientes temas:
+
+\begin{enumerate}
+	\item Definiciones básicas
+	\item Flujo general
+	\item Implementar el authenticator
+	\item Crear las actividades
+	\item Crear el authenticator service
+\end{enumerate}
 
 
 \section{Clase Sync Adapter}
