@@ -747,6 +747,42 @@ Para implementar este componente abordaremos los siguientes temas:
 \end{enumerate}
 
 
+\subsection{Definiciones básicas}
+
+\subsubsection{Token}
+\paragraph{}
+Es una clave de acceso temporal que el servidor le entrega a un cliente. El usuario se identifica, por lo general con usuario y contraseña, y el servidor le retorna esta clave que debe adjuntar en todos los requests que haga. Puede ser limitado y expirar pasada cierta cantidad de tiempo.
+
+\subsubsection{AccountManager}
+\paragraph{}
+Esta clase es como el maestro de la orquesta. Básicamente se encarga de la gestión de todas las cuentas en el dispositivo y sabe a quien llamar en cada caso que se presente. Esta clase la provee android por lo que no necesitamos implementarla.
+
+\subsubsection{AccountAuthenticator}
+\paragraph{}
+Cada empresa o conjunto de aplicaciones tiene distintas maneras de autenticar a los usuarios, por lo tanto android ofrece AccountAuthenticator para personalizar este proceso. Cada grupo de aplicaciones, que también puede ser solo una, (por ejemplo Facebook, Whatsapp, o Google) tiene su propio AccountAuthenticator. Esta clase sabe que actividad mostrar para que el usuario ingrese sus credenciales y donde encontrar algún token retornado por el servidor previamente.
+
+\subsubsection{AccountAuthenticatorActivity}
+\paragraph{}
+Actividad llamada por AccountAuthenticator para que el usuario ingrese a su cuenta o se registre. Esta debe interactuar con el servidor para obtener el token y retornarlo al AccountAuthenticator.
+
+
+\subsection{Flujo general}
+
+\paragraph{}
+El flujo no es muy complejo. Primero se le dice a AccountManager que me dé el token de cierta cuenta. Luego, este le pregunta al AccountAuthenticator relevante si tiene algún token. En caso de no existir hace que se abra la actividad de registro/logueo, obtiene el token retornado por el servidor y se retorna al AccountManager. El token se guarda en AccountManager para uso futuro y este lo retorna al que lo pidió por primera vez a través de un callback.
+
+\paragraph{}
+A continuación se presenta un gráfico que estuvo alguna vez en la documentación de google y que puede ayudar a clarificar el flujo. Se irán explicando los conceptos principales a medida que vayamos avanzando en la implementación.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{flujo_authenticator.png}
+    \caption{Flujo de log-in Authenticator}
+    \label{fig:flujo_authenticator}
+\end{figure}
+
+
+
 \section{Clase Sync Adapter}
 
 
