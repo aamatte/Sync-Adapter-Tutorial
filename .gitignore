@@ -128,3 +128,5 @@ sympy-plots-for-*.tex/
 # Images
 *.png
 *.svg
+
+*.tex
