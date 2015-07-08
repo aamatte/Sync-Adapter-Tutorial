@@ -126,14 +126,14 @@ Durante el siguiente tutorial se utilizará una aplicación sencilla que liste a
 \subsection{Qué se necesita}
 
 \paragraph{}
-Para que el Sync Adapter esté funcionando necesitamos implementar seis componentes, donde cada una juega un papel importante:
+Para que el SyncAdapter esté funcionando necesitamos implementar seis componentes, donde cada una juega un papel importante:
 
 \begin{enumerate}
  \item Base de datos
  \item Content Provider
  \item Authenticator
- \item Clase Sync Adapter
- \item Bound Service
+ \item Clase Sync dapter
+ \item Correr el SyncAdapter
 \end{enumerate}
 
 
@@ -196,7 +196,7 @@ public final class DatabaseContract {
 \paragraph{}
 Ahora utlizaremos la clase SQLiteOpenHelper, una API para poder interactuar con nuestra base de datos. Cuando utilizas esta clase el sistema realiza las operaciones de larga duración cuando tu lo decidas y no en el inicio de la aplicación. Lo único que se debe hacer es llamar a $getWritableDatabase()$ o a $getReadableDatabase()$. 
 \paragraph{}
-Las instancias de SQLiteDatabase retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. Con $getReadableDatabase()$ no se podrá escribir y tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
+Las instancias de SQLiteDatabase retornadas por estos métodos están especialmente configuradas para realizar las operaciones especificadas. Esto quiere decir que $getWritableDatabase()$ retornará una instancia en el que la escritura de datos será rápida en desmedro de la lectura. En cambio, con $getReadableDatabase()$ se tendrá una lectura más rápida. Además, al llamar a estos métodos se crea la base de datos en caso de no existir aún.
 
 \paragraph{}
 Otro método escencial es $onCreate(SQLiteDatabase)$. Ahí es donde se ejecuta el código SQL para crear las tablas de la base de datos. También están $onUpgrade(SQLiteDatabase)$ y $onDowngrade(SQLiteDatabase)$.
@@ -359,7 +359,7 @@ Se utiliza el método update.
 \section{Content Provider}
 
 \paragraph{}
-Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella o por otras aplicaciones sin la necesidad de que esta esté abierta.
+Un content provider es exactamente lo que su nombre dice, un proveedor de contenido o de datos. Ofrece un esquema estructurado para acceder, crear, borrar o actualizar los datos que se pongan a disposición a través de él. En definitiva es la forma en que tu aplicación ofrece sus datos para que puedan ser consumidos o editados por procesos externos a ella o por otras aplicaciones sin la necesidad de que esta esté abierta. Se pueden compartir los datos desde bases de datos o archivos, pero en este caso utilizaremos la primera.
 
 \paragraph{}
 Se pueden usar incluso como una forma de abstraer la implementación de un sistema de datos complejo frente al resto de los desarrolladores de una misma aplicación. De esta forma el resto de los integrantes del equipo solo deben estar al tanto de los estándares de comunicación con el content provider y no necesitan preocuparse de detalles de la implementación. De todas formas su principal objetivo es compartir los datos con otros procesos.
@@ -409,7 +409,7 @@ Un content URI es un identificador de un conjunto de datos en un provider. Está
 \subsubsection{Authority}
 
 \paragraph{}
-La authority es el identificador de tu aplicación dentro de android. Por lo general el formato de este viene dado por el package de la aplicación más 'provider'. Por ejemplo, en el caso de nuestra aplicación es \textit{com.example.andres.myapplication.provider}. En el package (y en este caso, en la authority) se suele utilizar como primeras palabras un dominio de internet, al revés, al cual pertenece la aplicación. En este caso asumimos que hay un dominio con la ruta \textit{andres.example.com}.
+La authority es el nombre de tu provider. Por lo general el formato de este viene dado por el package de la aplicación más 'provider'. Por ejemplo, en el caso de nuestra aplicación es \textit{com.example.andres.myapplication.provider}. En el package (y en este caso, en la authority) se suele utilizar como primeras palabras un dominio de internet, al revés, al cual pertenece la aplicación. En este caso asumimos que hay un dominio con la ruta \textit{andres.example.com}.
 
 \subsubsection{Estructura de rutas URI}
 
@@ -791,6 +791,18 @@ A continuación se presenta un gráfico que estuvo alguna vez en la documentaci�
 \paragraph{}
 El AccountAuthenticator es el encargado de realizar todas las operaciones importantes relacionadas con la cuenta: obtener el token, mostrar pantalla de logueo y comunicarse con el servidor. Para crear un nuestro propio AccountAuthenticator tenemos que extender la clase abstracta AbstractAccountAuthenticator e implementar algunos métodos, donde los más importantes son addAccount y getAuthToken.
 
+\paragraph{}
+Para implementar los métodos del authenticator se debe seguir un patrón relativamente estandar. Para cada uno de los métodos se debe devolver una de las siguientes opciones:
+
+\begin{itemize}
+	\item Si los argumentos que se entregan al método son suficientes para llevar a cabo la operación entonces se debe realizar la acción y devolver un Bundle con los resultados.
+	\item Si el authenticator necesita información del usuario y este no la tiene, entonces se creará un Intent para iniciar una actividad que le pedirá los datos al usuario. Este Intent tiene que ser retornado en un Bundle con el key KEY\_INTENT. Como la actividad tiene que devolver al authenticator el resultado de la petición de datos, entonces se debe incluir el AccountAuthenticatorResponse en el intent con el key KEY\_ACCOUNT\_MANAGER\_RESPONSE. Luego, la actividad tiene que llamar onResult(Bundle) si tuvo éxito, o onError(int, String) si hubo algún error. Esto se evita al hacer que la actividad extienda de AccountAuthenticatorActivity.
+	\item En caso de haber algún error se debe retornar un Bundle que contenga un par de valores con un código de error como key (int) y con un String que explique el error como valor.
+\end{itemize}
+
+\paragraph{}
+En el caso nuestro, haremos una implementación relativamente sencilla de estos métodos. El esqueleto es como sigue:
+
 \begin{lstlisting}
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
@@ -957,7 +969,7 @@ Si por alguna razón el token que se tiene ya no es válido, este se debe invali
 \subsection{Crear la actividad de log-in}
 
 \paragraph{}
-En esta actividad el usuario ingresará sus credenciales y obtendrá el token que debemos guardar para enviarlo al authenticator asociado. Un punto importante es que esta actividad va a extender de AccountAuthenticatorActivity. Al extender de esta clase se obtiene el método setAccountAuthenticatorResult(). Este método retorna el resultado de la autenticación en la actividad al Authenticator, quien llamó a la actividad en primer lugar. De esta forma no tenemos que hacer una interface para comunicarnos con el Authenticator.
+En esta actividad el usuario ingresará sus credenciales y obtendrá el token que debemos guardar para enviarlo al authenticator asociado. Un punto importante es que esta actividad va a extender de AccountAuthenticatorActivity. Al extender de esta clase se obtiene el método setAccountAuthenticatorResult(). Además, al extender de esta clase se sobreescribe el método finish() de la actividad, que es llamado siempre cuando la actividad termina. Ahora este método llamará automáticamente a onResult() si es que se invocó a setAuthenticatorResult() o a onError() si es que no se invocó (ver últimas lineas del código de finishLogin() más abajo).
 
 \paragraph{}
 Se creó un método submit() que se llama al apretar el botón de log-in.
@@ -1050,16 +1062,396 @@ Ahora tenemos que hacer que nuestro Authenticator esté disponible para todas la
 Un servicio es un componente de una aplicación hecho para correr operaciones de larga duración en el background. No posee interfaz gráfica y necesita que otra componente de la aplicación la inicie. Luego, y pese a que la aplicación que la inició se cierre, el servicio seguirá corriendo hasta que termine con su tarea. Puede usarse para tocar música, para interactuar con un content provider o para realizar operaciones con un servidor.
 
 \paragraph{}
-En este caso usaremos un servicio Bound. Este tipo de servicios dan la opción de "enlazarse" con una componente de una aplicación a través del método bindService(). Este tipo de servicios ofrece una interfaz cliente-servidor que permite a los componentes interactuar con el servicio, enviar requests, obtener resultados, etc. Un bound service corre solo mientras la componente de la aplicación esté enlazado a el.
+En este caso usaremos un servicio Bound. Este tipo de servicios dan la opción de enlazarse con una componente de la aplicación a través del método bindService(). Este tipo de servicios ofrece una interfaz cliente-servidor que permite a los componentes interactuar con el servicio, enviar requests, obtener resultados, etc. Un bound service corre solo mientras la componente de la aplicación esté enlazado a el.
 
 \paragraph{}
-Para crear un bound service tenemos que implementar onBind(), un callback que retorna un IBinder. Este objeto define la interfaz de comunicación con el servicio. La implementación que haremos de este servicio será muy sencilla, por lo que si quieres averiguar más sobre esta componente que ofrece android puedes mirar la documentación\footnote{\url{http://developer.android.com/guide/components/services.html\#CreatingBoundService}}
+Para crear un bound service tenemos que implementar onBind(), un callback que retorna un IBinder. Este objeto define la interfaz de comunicación con el servicio. La implementación que haremos será muy sencilla, por lo que si quieres averiguar más sobre servicios puedes mirar la documentación\footnote{\url{http://developer.android.com/guide/components/services.html\#CreatingBoundService}}
 .
 
-\section{Clase Sync Adapter}
+\begin{lstlisting}
+
+public class AuthenticatorService extends Service {
+    private AccountAuthenticator mAuthenticator;
+    
+    @Override
+    public void onCreate() {
+        // Create a new authenticator object
+        mAuthenticator = new AccountAuthenticator(this);
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mAuthenticator.getIBinder();
+    }
+}
+
+\end{lstlisting}
 
 
-\section{Bound Service}
+\subsection{XML y manifest}
+
+En el manifest debemos agregar nuestro servicio:
+
+\begin{lstlisting}
+
+<service android:name=".Services.AuthenticatorService">
+	<intent-filter>
+	     <action android:name="android.accounts.AccountAuthenticator" />
+	</intent-filter>
+	<meta-data android:name="android.accounts.AccountAuthenticator"
+	           android:resource="@xml/authenticator" />
+</service>
+
+\end{lstlisting}
+
+Ahora, si es que aún no tienes una carpeta con nombre \textit{xml} dentro de \textit{res} creala. Dentro de ella crearemos un archivo xml con el nombre authenticator.xml. Este archivo nos permitirá definir algunos atributos.
+
+\begin{lstlisting}
+
+<?xml version="1.0" encoding="utf-8"?>
+<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accountType="com.example.andres.myapplication"    
+    android:icon="@drawable/ic_launcher"
+    android:smallIcon="@drawable/ic_launcher"
+    android:label="@string/app_name"
+/>
+
+\end{lstlisting}
+
+\paragraph{}
+Algunos de los atributos importantes que se pueden poner en el archivo son:
+
+\begin{itemize}
+	\item accountType: nombre para identificar nuestro tipo de cuenta. Cuando alguna aplicación quiera autenticarse con nuestra cuenta debe usar ese accountType.
+	\item icon y smallIcon: iconos a ser mostrados en la configuración del celular, en la zona de cuentas.
+	\item label: nombre de nuestro tipo de cuenta en la configuración del celular.
+	\item accountPreferences: también se puede definir un archivo de preferencias que se desplegará al apretar nuestra cuenta en configuraciones del celular. En este caso no lo definimos.
+\end{itemize}
+
+\subsection{Cómo usarlo}
+
+\paragraph{}
+El uso más básico es preguntarle a AccountManager por las cuentas del tipo que nos interesa y elegir la primera, si es que sabemos que solo habrá una. En caso de poder haber más de una (como las cuentas de Google) sería conveniente poner esas cuentas en una lista y que el usuario decidiera cual utilizar. En la actividad principal de la aplicación de ejemplo se utiliza el siguiente código:
+
+\begin{lstlisting}
+
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+	super.onCreate(savedInstanceState);
+	...
+    accountManager = (AccountManager) getSystemService(ACCOUNT_SERVICE);
+
+    Account[] accounts = accountManager.getAccountsByType(ACCOUNT_TYPE);
+    if (accounts.length == 0){
+        // Tambien se puede llamar a metodo accountManager.addAcount(...)
+        Intent intent = new Intent(this, AuthenticatorActivity.class);
+        intent.putExtra(AuthenticatorActivity.ARG_IS_ADDING_NEW_ACCOUNT, true);
+        startActivity(intent);
+    }
+    else{
+        mAccount = accounts[0];
+        accountManager.getAuthToken(mAccount, "normal", null, this, mGetAuthTokenCallback, null);
+	    ...
+    }
+    ....
+}
+
+\end{lstlisting}
+
+El código de \textit{mGetAuthTokenCallback} es:
+
+\begin{lstlisting}
+
+private AccountManagerCallback<Bundle> mGetAuthTokenCallback =
+	    new AccountManagerCallback<Bundle>() {
+        		@Override
+        		public void run(final AccountManagerFuture<Bundle> arg0) {
+            		try {
+                		token = (String) arg0.getResult().get(AccountManager.KEY_AUTHTOKEN);
+            		} catch (Exception e) {
+                		// handle error
+            		}
+        		}
+    		};
+
+\end{lstlisting}
+
+\section{Clase SyncAdapter}
+
+\paragraph{}
+El SyncAdapter es la componente de la aplicación que encapsulará el código para transferir datos entre el dispositivo y un servidor. Basado en la configuración que le des el SyncAdapter ejecutará el código de sincronización. Para añadir dejar el SyncAdapter funcionando (al fin) necesitamos los siguientes componentes:
+
+\begin{enumerate}
+	\item Clase SyncAdapter: contiene tu código de sincronización en una interface compatible con el framework sync adapter.
+	\item Bound service: permite al framework correr el código en el tu clase sync adapter.
+	\item Archivo de metadata xml: contiene información de tu sync adapter. El framework lee esta información para saber como calendarizar y cargar tu transferencia de datos.
+	\item Declaraciones en manifest: declara el bound service y apunta a datos específicos de la metadata del sync adapter xml.
+\end{enumerate}
+
+\subsection{Clase SyncAdapter}
+
+\paragraph{}
+Debemos crear una nueva clase que extienda de AbstractThreadedSyncAdapter, la clase base del sync adapter. También debemos definir constructores para la clase e implementar el método donde se definen las tareas de sincronización.
+
+\subsubsection{Extender AbstractThreadedSyncAdapter}
+
+\paragraph{}
+En los constructores de la clase que extienda a AbstractThreadedSyncAdapter (en este caso la llamaremos SyncAdapter) debemos hacer un proceso muy similar a la configuración que se hace cuando se está creando una actividad. Se debe hacer el setup del sync adapter, al igual que en el Activity.onCreate(). Por ejemplo, nosotros utilizaremos el ContentProvider para hacer la sincronización de datos, por lo que es conveniente obtener una referencia a ContentResolver en el constructor. Por ejemplo en nuestro caso quedaría como sigue:
+
+\begin{lstlisting}
+
+public class SyncAdapter extends AbstractThreadedSyncAdapter {
+    private ContentResolver mContentResolver;
+    private String students;
+    private String token;
+    private AccountManager mAccountManager;
+	...
+
+    public SyncAdapter (Context context, boolean autoInitialize){
+        super(context, autoInitialize);
+        this.mContentResolver = context.getContentResolver();
+        mAccountManager = AccountManager.get(context);
+
+    }
+	
+	...
+}
+\end{lstlisting}
+
+\subsubsection{Implementar onPerformSync}
+
+\paragraph{}
+El método onPerformSync es el método que el framework llama para hacer la sincronización de datos. Por lo tanto acá debes implementar toda la lógica de tu sincronización. Los parámetros de onPerformSync son:
+
+\begin{itemize}
+	\item Account: cuenta asociada a la sincronización.
+	\item Extras: Bundle que contiene flags con información mandada el evento que desencadenó la sincronización.
+	\item Authority: la authority del content provider que implementamos.
+	\item ContentProviderClient: es una clase con algunas funcionalidades de ContentResolver y que nos permite interactuar con el ContentProvider identificado por el authority que viene en los argumentos. Si no se quiere utilizar se puede ignorar.
+	\item SyncResult: objeto para mandar información al sync adapter framework.
+\end{itemize}
+
+\paragraph{}
+El código para sincronizar datos que utilizamos en la app de ejemplo no tiene mucha importancia, pero es el siguiente:
+
+\begin{lstlisting}
+@Override
+public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
+        try {
+            // No importa que el thread se bloquee ya que es asincronico.
+            token = mAccountManager.blockingGetAuthToken(account, "normal" , true);			
+			// Obtiene datos del servidor
+            ArrayList<String> results = performRequest(url, "GET");
+
+         	// Sincroniza los datos			
+            updateData(results, "GET");
+            
+        // Manejo de errores
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch ...
+        
+        ...
+}
+\end{lstlisting}
+
+\paragraph{}
+Dentro de este método debes hacer las siguientes cosas:
+\begin{itemize}
+	\item Conectarse al servidor
+	\item Descargar y subir datos
+	\item Manejar conflictos y determinar como sincronizar los datos
+	\item Cerrar conexiones y limpiar archivos temporales y caché
+\end{itemize}
+
+\subsection{Bound Service}
+
+\paragraph{}
+Ahora debemos enlazar nuestro SyncAdapter al framework sync adapter para que este tenga acceso a nuestro código. Para eso usaremos un bound service, al igual que en el authenticator. Este servicio pasará un Binder especial al framework. Con este Binder el framework puede invocar a nuestro onPerformSync(). El código sería como sigue:
+
+\begin{lstlisting}
+public class SyncService extends Service {
+    private static final Object sSyncAdapterLock = new Object();
+    private static SyncAdapter sSyncAdapter = null;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        synchronized (sSyncAdapterLock) {
+            if (sSyncAdapter == null) {
+                sSyncAdapter = new SyncAdapter(getApplicationContext(), true);
+            }
+        }
+    }
+    
+    @Override
+    public IBinder onBind(Intent intent) {
+        return sSyncAdapter.getSyncAdapterBinder();
+    }
+    
+    ...
+
+} 
+\end{lstlisting}
+
+\subsection{Agregar SyncAdapter metadata}
+
+\paragraph{}
+Ahora debemos poner a disposición del framework la metadata necesaria que describe el componente y que provee algunos flags extras. Se especifica el tipo de cuenta que creaste para el tu SyncAdapter, declara un authority del content provider asociado con la app, controla una parte de la interfaz de usuario relacionada con el sync adapter y declara otros flags.
+
+\paragraph{}
+Debemos crear nuestro archivo syncadapter.xml en /res/xml. El contenido es como sigue:
+
+\begin{lstlisting}
+
+<?xml version="1.0" encoding="utf-8"?>
+<sync-adapter
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:contentAuthority="com.example.andres.myapplication.provider"
+    android:accountType="com.example.andres.myapplication"
+    android:userVisible="true"				// dice que es visible en configuraciones del telefono
+    android:allowParallelSyncs="false"		// multiples instancias de sync adapter no pueden correr
+    android:isAlwaysSyncable="true"			// puede sincronizar en cualquier momento que hayas dicho
+    android:supportsUploading="true"/>
+
+\end{lstlisting}
+
+\subsection{Declararlo en el manifest}
+
+\paragraph{}
+Tenemos que declarar el servicio que creamos y agregar los permisos necesarios para que el sync adapter pueda correr adecuadamente. Los permisos necesarios son los siguientes:
+
+\begin{itemize}
+	\item android.permission.INTERNET
+	\item android.permission.READ\_SYNC\_SETTINGS: permite leer el estado de la configuración del sync adapter.
+	\item android.permission.WRITE\_SYNC\_SETTINGS: permite a tu app controlar la configuración del sync adapter.
+	\item android.permission.AUTHENTICATE\_ACCOUNTS: ya deberias tener esta desde que creamos el Authenticator.
+\end{itemize}
+
+Además, el servicio queda declarado como sigue:
+
+\begin{lstlisting}
+<service
+	android:name=".Services.SyncService"
+	android:exported="true"		// permite a procesos externos a tu app acceder al servicio
+	android:process=":sync">    // le dice al sistema que corra el servicio en un proceso global llamado sync
+	<intent-filter>
+		<action android:name="android.content.SyncAdapter"/>
+	</intent-filter>
+	<meta-data android:name="android.content.SyncAdapter"
+			   android:resource="@xml/syncadapter" />
+</service>
+\end{lstlisting}
+
+\section{Corriendo el SyncAdapter}
+
+\paragraph{}
+Debes tratar de correr el SyncAdapter basado en un calendario o como resultado indirecto de algún evento. Por ejemplo, puedes realizar la sincronización en un momento particular del día, o cuando hayan cambios en los datos almacenados en el dispositivo. Debes evitar correr la sincronización por una acción directa del usuario porque haciendo esto no aprovechas todos los beneficios de una sincronización calendarizada.
+
+\paragraph{}
+Para realizar la sincronización tienes varias alternativas basadas en distintos eventos.
+
+\subsection{Datos del servidor cambian}
+
+\paragraph{}
+Cambiar los datos en respuesta a un mensaje desde el servidor indicando que los datos han cambiado. Esta opción te permite actualizar los datos sin utilizar mucha batería y mejora bastante el desempeño. No cubriremos en detalle ya que requiere utilizar Google Cloud Messaging (GCM), tema que da para un tutorial por si solo.
+
+
+\subsection{Datos del content provider cambian}
+
+\paragraph{}
+Para realizar esto debes registrar un observer para el content provider. Cuando los datos en el content provider cambia, el content provider framework llama al observer. En el observer se debe llamar a requestSync() para decirle al framework que corra el sync adapter.
+
+\paragraph{}
+Para crear el observer debes extender la clase ContentObserver e implementar el método onChange(). Dentro de este método debes llamar a requestSync() para iniciar el SyncAdapter. Para registrar al observer hay que pasar esta clase como argumento de registerContentObserver(). También debes pasar un content URI que indica los datos que quieres observar. La clase observer quedaría como sigue:
+
+\begin{lstlisting}
+
+    public class TableObserver extends ContentObserver {
+        /**
+         * Crea un content observer
+         *
+         */
+        public TableObserver(Handler handler) {
+            super(handler);
+        }
+
+        /*
+         * Define el metodo que es llamado cuando los datos en el content provider cambian.
+         * Este metodo es solo para que haya compatibilidad con plataformas mas viejas.
+        */
+        @Override
+        public void onChange(boolean selfChange) {
+            onChange(selfChange, null);
+        }
+        /*
+         * Define el metodo que es llamado cuando los datos en el content provider cambian.
+         */
+        @Override
+        public void onChange(boolean selfChange, Uri changeUri) {
+            
+            if (mAccount != null) {
+                // Corre la sincronizacion
+                ContentResolver.requestSync(mAccount, StudentsContract.AUTHORITY, null);
+            }
+        }
+    }
+
+\end{lstlisting} 
+
+\paragraph{}
+Luego para registrar el observer tenemos que hacer lo siguiente:
+
+\begin{lstlisting}
+// En activity.onCreate()
+...
+TableObserver observer = new TableObserver(null);
+/*
+ * Registra el obsever para students
+ */
+mResolver.registerContentObserver(StudentsContract.STUDENTS_URI, true, observer);
+...
+
+\end{lstlisting}
+
+\subsection{Hay un Network Message}
+
+\paragraph{}
+Cuando una conexión de red está disponible el sistema manda unos mensajes para mantener la conexión TCP/IP abierta. Este mensaje también va al ContentResolver. Utilizando el método setSyncAutomatically() la sincronización se realiza siempre que ContentResolver recibe el mensaje. Utilizando este forma de sincronzar los datos te aseguras de que la sincronización se realice siempre que haya una conexión.
+
+\paragraph{}
+Usa esta opción si necesitas que los datos estén regularmente actualizados, pero no es completamente necesario que se actualicen apenas los datos del content provider cambian. También es buena opción si no necesitas correr la sincronización con un calendario definido. Se puede usar setSyncAutomatically() y  addPeriodicSync() (la forma de sincronizar de la siguiente sección) en conjunto.
+
+\paragraph{}
+Configurar esta forma de sincronizar es bastante sencillo, solo se debe agregar:
+\begin{lstlisting}
+// En activity.onCreate()
+...
+mResolver.setSyncAutomatically(mAccount, StudentsContract.AUTHORITY , true);
+...
+\end{lstlisting}
+
+\subsection{Correr SyncAdapter periódicamente}
+
+\paragraph{}
+Puedes configurar que el sync adapter se ejecute cada ciertos intervalos de tiempo, o a una hora específica, o ambos. Por ejemplo, puedes subir datos en una hora específica, cuando sabes que tu servidor está menos ocupado. Si ocupas esta estrategia debes procurar que cada dispositivo ejecute la sincronización a una hora ligeramente diferente, para no sobrecargar el servidor.
+\paragraph{}
+Una sincronización periódica tiene sentido si el usuario no necesita actualización instantanea pero si necesita que los datos se actualicen regularmente. Un ejemplo podría ser una aplicación de noticias. Sería bueno que la ejecución se realice cuando se han publicado las noticias de la mañana, por lo que una sincronización un poco después de eso podría ser de utilidad.
+\paragraph{}
+Para utilizar esta opción debes usar el método addPeriodicSync(). Esto hace que se ejecute la sincronización luego de que un tiempo determinado a pasado. Este tiempo puede variar en algunos segundos para que el framework pueda optimizar las veces que se utiliza el internet al coordinarlo con otros sync adpaters.
+\paragraph{}
+Para correr el sync adapter a ciertas horas específicas diariamente debes usar AlarmManager, tema que no se revisará en este tutorial. El método addPeriodicSync() y el setSyncAutomatically() pueden ir juntos perfectamente.
+
+\subsection{Correr SyncAdapter por acción del usuario}
+
+\paragraph{}
+Es una opción muy poco recomendada, debido a que hace un uso ineficiente de la calenderización del framework. Si se quiere utilizar, se debe usar el método requestSync() frente a la acción específica del usuario.
+
+\section{Comentarios}
+
+\paragraph{}
+Espero que el tutorial haya sido de utilidad para quienes estén tratando de implementar un SyncAdapter, o para quienes por simple curiosidad querían aprender más sobre este importante tema. Agradecería mucho que me avises (matte.andres@gmail.com) ante cualquier error en los conceptos o en el código para poder modificarlo.
 
 
 \end{document}
