@@ -124,7 +124,3 @@ sympy-plots-for-*.tex/
 # WinEdt
 *.bak
 *.sav
-
-# Images
-*.png
-*.svg
