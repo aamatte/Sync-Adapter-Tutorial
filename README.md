@@ -7,5 +7,5 @@ Los temas que abarca el tutorial son:
 4. Crear SyncAdapter
 5. Correr SyncAdapter
 
-Si se tiene alguna pregunta o se detecta un error en el contenido, por favor comentarlo a través de Issues o a mi email: matte.andres@gmail.com.
+Si se tiene alguna pregunta o se detecta un error en el contenido, por favor comentarlo a través de Issues o a mi email: aamatte@uc.cl
 
